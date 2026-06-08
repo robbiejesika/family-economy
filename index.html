@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Harmon Family Economy Portal</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .loader { border-top-color: #4f46e5; animation: spinner 1.2s linear infinite; }
+        @keyframes spinner { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    </style>
+</head>
+<body class="bg-slate-100 text-slate-800 font-sans min-h-screen">
+
+    <script>
+        const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbz1XGjn_V2dFCU9pCxBHbjECj71Kp_7KT13kn33WEvDOwfs3H4CKqMfOUKM2h9E9Q8Utw/exec";
+    </script>
+
+    <header class="bg-indigo-950 text-white shadow-md px-6 py-4 flex flex-col sm:flex-row justify-between items-center gap-4">
+        <h1 class="text-xl font-bold tracking-wide flex items-center gap-2">
+            🏦 Harmon Family Ledger Core
+        </h1>
+        <button onclick="fetchAllData()" class="bg-indigo-600 hover:bg-indigo-700 text-sm font-semibold px-5 py-2 rounded-lg shadow dynamic-transition">
+            🔄 Sync Live Account Balances
+        </button>
+    </header>
+
+    <div id="globalLoader" class="fixed inset-0 bg-slate-950/50 backdrop-blur-sm z-50 flex flex-col justify-center items-center gap-4 hidden">
+        <div class="loader ease-linear rounded-full border-4 border-t-4 border-slate-200 h-14 w-14"></div>
+        <p class="text-white font-medium bg-slate-900/90 px-5 py-2 rounded-full text-xs shadow-xl tracking-wide">Processing and recalculating ledger tokens...</p>
+    </div>
+
+    <main class="max-w-6xl mx-auto p-4 sm:p-6 lg:p-8 space-y-8">
+        
+        <section>
+            <h2 class="text-xs uppercase tracking-wider text-slate-500 font-bold mb-3">Active Child Profile</h2>
+            <div id="childTabsContainer" class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                <p class="text-slate-400 italic text-sm col-span-4">Locating family ledger records...</p>
+            </div>
+        </section>
+
+        <div id="dashboardContent" class="hidden space-y-8">
+            
+            <section class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div class="bg-emerald-600 text-white rounded-2xl p-5 shadow-sm">
+                    <span class="text-xs uppercase font-extrabold tracking-widest text-emerald-100">💵 Spending Cash (Checking)</span>
+                    <p class="text-[11px] text-emerald-200 mb-2">Available for immediate withdrawal use</p>
+                    <p id="kidViewChecking" class="text-3xl font-black">$0.00</p>
+                </div>
+                <div class="bg-indigo-600 text-white rounded-2xl p-5 shadow-sm">
+                    <span class="text-xs uppercase font-extrabold tracking-widest text-indigo-100">⛪ Cumulative Tithing Vault</span>
+                    <p class="text-[11px] text-indigo-200 mb-2">Total accumulated charity assets</p>
+                    <p id="kidViewTithing" class="text-3xl font-black">$0.00</p>
+                </div>
+                <div class="bg-amber-600 text-white rounded-2xl p-5 shadow-sm">
+                    <span class="text-xs uppercase font-extrabold tracking-widest text-amber-100">🐖 Cumulative Savings Vault</span>
+                    <p class="text-[11px] text-amber-200 mb-2">Long-term interest tracking pool</p>
+                    <p id="kidViewSavings" class="text-3xl font-black">$0.00</p>
+                </div>
+            </section>
+
+            <section class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                
+                <div class="lg:col-span-5 bg-white rounded-2xl shadow-sm border border-slate-200 p-6 flex flex-col justify-between">
+                    <div>
+                        <div class="border-b border-slate-100 pb-3 mb-4">
+                            <h3 class="text-base font-bold text-slate-900 flex items-center gap-2">🔑 Parent Score Center</h3>
+                            <p class="text-xs text-slate-500">Calculate and release performance-based allocations</p>
+                        </div>
+                        
+                        <div class="space-y-4">
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-600 mb-1">Age Context</label>
+                                    <input type="number" id="parentAgeInput" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm font-medium focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-600 mb-1">Score (0-28 Max)</label>
+                                    <input type="number" id="parentPointsInput" min="0" max="28" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm font-black text-indigo-600 focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                                </div>
+                            </div>
+                            
+                            <div class="bg-slate-50 border border-slate-200 rounded-xl p-3 text-xs space-y-2 text-slate-600">
+                                <div class="flex justify-between"><span class="font-medium">Rule System Cap:</span> <span id="lblBasePotential" class="font-bold text-slate-800">$0.00</span></div>
+                                <div class="flex justify-between border-t border-slate-200/60 pt-1.5"><span class="font-medium">Calculated Gross:</span> <span id="lblGrossEarned" class="font-bold text-emerald-600">$0.00</span></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <button onclick="submitWeeklyPayout()" class="w-full mt-6 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs uppercase tracking-wider py-3 rounded-xl shadow transition-all">
+                        🚀 Release Weekly Split Allocations
+                    </button>
+                </div>
+
+                <div class="lg:col-span-7 bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
+                    <div class="border-b border-slate-100 pb-3 mb-4">
+                        <h3 class="text-base font-bold text-slate-900 flex items-center gap-2">🛒 Log a Deposit or Expense</h3>
+                        <p class="text-xs text-slate-500">Add an interactive single-item entry directly to your history statement</p>
+                    </div>
+
+                    <div class="space-y-4">
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                            <div>
+                                <label class="block text-xs font-bold text-slate-600 mb-1">Transaction Type</label>
+                                <select id="txType" onchange="toggleSplitCheckboxVisibility()" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none font-bold text-slate-700">
+                                    <option value="Expense (Withdrawal)">Expense (Withdrawal)</option>
+                                    <option value="Deposit">Deposit (Income / Earnings)</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-600 mb-1">Target Account Vault</label>
+                                <select id="txAccount" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                                    <option value="Checking (Spending)">Spending Cash (Checking)</option>
+                                    <option value="Tithing Vault">Tithing Vault</option>
+                                    <option value="Savings Vault">Savings Vault</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-600 mb-1">Total Amount ($)</label>
+                                <input type="number" id="txAmount" step="0.01" placeholder="0.00" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm font-black focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                            </div>
+                        </div>
+
+                        <div id="autoSplitWrapper" class="hidden bg-indigo-50/60 border border-indigo-100 rounded-xl p-3 flex items-center gap-3">
+                            <input type="checkbox" id="txAutoSplit" class="w-4 h-4 text-indigo-600 border-slate-300 rounded focus:ring-indigo-500">
+                            <div>
+                                <label for="txAutoSplit" class="block text-xs font-bold text-indigo-900 cursor-pointer">Apply Family Economy 70/20/10 Split Rule</label>
+                                <p class="text-[10px] text-indigo-700">Checking gets 70%, Savings gets 20%, and Tithing gets 10% automatically.</p>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-bold text-slate-600 mb-1">Description / Job Name</label>
+                            <input type="text" id="txDescription" placeholder="e.g., Cleaning the clinic, Costa Vida dinner, allowance match" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                        </div>
+
+                        <button onclick="submitCustomTransaction()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs uppercase tracking-wider py-3 rounded-xl shadow transition-all">
+                            ➕ Save Transaction Entry
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+            <section class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
+                <div class="border-b border-slate-100 pb-3 mb-4 flex justify-between items-center">
+                    <div>
+                        <h3 class="text-base font-bold text-slate-900">📄 Recent Statement History</h3>
+                        <p class="text-xs text-slate-500">Live itemized record entries for this account</p>
+                    </div>
+                    <span class="text-[10px] uppercase font-bold px-2 py-1 bg-slate-100 text-slate-500 rounded">Last 15 Records</span>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse text-xs">
+                        <thead>
+                            <tr class="bg-slate-50 border-b border-slate-200 text-slate-600 font-bold uppercase tracking-wider">
+                                <th class="p-3">Timestamp Date</th>
+                                <th class="p-3">Account Vault</th>
+                                <th class="p-3">Type</th>
+                                <th class="p-3">Description Context Notes</th>
+                                <th class="p-3 text-right">Net Value ($)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="ledgerHistoryContainer" class="divide-y divide-slate-100 font-medium text-slate-700">
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <script>
+        let globalState = {};
+        let activeChild = null;
+
+        document.addEventListener("DOMContentLoaded", () => {
+            if(WEB_APP_URL.includes("YOUR_DEPLOYED_WEB_APP_URL")) {
+                alert("Configuration Required: Please paste your deployed Web App URL into line 18.");
+                return;
+            }
+            fetchAllData();
+        });
+
+        function fetchAllData() {
+            toggleLoader(true);
+            fetch(WEB_APP_URL)
+                .then(res => res.json())
+                .then(res => {
+                    if(res.success) {
+                        globalState = res.data;
+                        renderProfileTabs();
+                        selectChild(activeChild || Object.keys(globalState)[0]);
+                    } else {
+                        alert("API System Error: " + res.error);
+                    }
+                })
+                .catch(err => alert("Network communication dropped during data sync: " + err.toString()))
+                .finally(() => toggleLoader(false));
+        }
+
+        function renderProfileTabs() {
+            const container = document.getElementById("childTabsContainer");
+            container.innerHTML = "";
+            Object.keys(globalState).forEach(name => {
+                const child = globalState[name];
+                const btn = document.createElement("button");
+                btn.className = `p-4 rounded-2xl border text-left transition-all ${activeChild === name ? 'bg-indigo-50 border-indigo-500 ring-4 ring-indigo-500/10' : 'bg-white border-slate-200 hover:bg-slate-50'}`;
+                btn.onclick = () => selectChild(name);
+                btn.innerHTML = `
+                    <p class="font-black text-slate-900 text-base">${name}</p>
+                    <p class="text-[11px] text-slate-500">Available: <span class="text-emerald-600 font-bold">${formatCurrency(child.balanceChecking)}</span></p>
+                `;
+                container.appendChild(btn);
+            });
+        }
+
+        function selectChild(name) {
+            if(!name || !globalState[name]) return;
+            activeChild = name;
+            renderProfileTabs();
+
+            const child = globalState[name];
+            document.getElementById("dashboardContent").classList.remove("hidden");
+
+            document.getElementById("kidViewChecking").innerText = formatCurrency(child.balanceChecking);
+            document.getElementById("kidViewTithing").innerText = formatCurrency(child.balanceTithing);
+            document.getElementById("kidViewSavings").innerText = formatCurrency(child.balanceSavings);
+
+            document.getElementById("parentAgeInput").value = child.age;
+            document.getElementById("parentPointsInput").value = child.points;
+            document.getElementById("lblBasePotential").innerText = formatCurrency(child.basePotential);
+            document.getElementById("lblGrossEarned").innerText = formatCurrency(child.grossEarned);
+
+            const historyTable = document.getElementById("ledgerHistoryContainer");
+            historyTable.innerHTML = "";
+            
+            if(!child.ledgerHistory || child.ledgerHistory.length === 0) {
+                historyTable.innerHTML = `<tr><td colspan="5" class="p-4 text-center italic text-slate-400">No account history found for this child yet.</td></tr>`;
+                return;
+            }
+
+            child.ledgerHistory.forEach(tx => {
+                const row = document.createElement("tr");
+                row.className = "hover:bg-slate-50/80 transition-colors";
+                
+                const typeStyle = tx.type === "Deposit" ? "bg-emerald-50 text-emerald-700 font-bold px-2 py-0.5 rounded" : "bg-rose-50 text-rose-700 font-bold px-2 py-0.5 rounded";
+                const amountStyle = tx.amount >= 0 ? "text-emerald-600 font-bold text-right" : "text-rose-600 font-bold text-right";
+                
+                row.innerHTML = `
+                    <td class="p-3 text-slate-400 font-mono">${tx.timestamp}</td>
+                    <td class="p-3 font-semibold text-slate-600">${tx.account}</td>
+                    <td class="p-3"><span class="${typeStyle}">${tx.type}</span></td>
+                    <td class="p-3 text-slate-500 max-w-xs truncate" title="${tx.description}">${tx.description}</td>
+                    <td class="p-3 ${amountStyle}">${formatCurrency(tx.amount)}</td>
+                `;
+                historyTable.appendChild(row);
+            });
+        }
+
+        function submitWeeklyPayout() {
+            const age = Number(document.getElementById("parentAgeInput").value);
+            const points = Number(document.getElementById("parentPointsInput").value);
+            
+            if(confirm(`Are you sure you want to release the weekly split payouts for ${activeChild} based on a performance score of ${points}/28?`)) {
+                sendPayload({
+                    name: activeChild,
+                    age: age,
+                    points: points,
+                    commitWeeklyPayout: true
+                });
+            }
+        }
+
+        function submitCustomTransaction() {
+            const account = document.getElementById("txAccount").value;
+            const type = document.getElementById("txType").value;
+            const amount = parseFloat(document.getElementById("txAmount").value);
+            const description = document.getElementById("txDescription").value.trim();
+            const autoSplit = document.getElementById("txAutoSplit").checked;
+
+            if (isNaN(amount) || amount <= 0) {
+                alert("Please enter a valid dollar amount greater than 0.");
+                return;
+            }
+            if (!description) {
+                alert("Please enter a description note (e.g. 'Cleaning the clinic').");
+                return;
+            }
+
+            sendPayload({
+                name: activeChild,
+                customTransactions: [{
+                    account: account,
+                    type: type,
+                    amount: amount,
+                    description: description,
+                    autoSplit: autoSplit
+                }]
+            });
+            
+            document.getElementById("txAmount").value = "";
+            document.getElementById("txDescription").value = "";
+            document.getElementById("txAutoSplit").checked = false;
+            document.getElementById("autoSplitWrapper").classList.add("hidden");
+            document.getElementById("txType").value = "Expense (Withdrawal)";
+        }
+
+        function toggleSplitCheckboxVisibility() {
+            const type = document.getElementById("txType").value;
+            const splitWrapper = document.getElementById("autoSplitWrapper");
+            const accountSelect = document.getElementById("txAccount");
+            
+            if (type === "Deposit") {
+                splitWrapper.classList.remove("hidden");
+                accountSelect.value = "Checking (Spending)"; 
+            } else {
+                splitWrapper.classList.add("hidden");
+                document.getElementById("txAutoSplit").checked = false;
+            }
+        }
+
+        function sendPayload(payload) {
+            toggleLoader(true);
+            fetch(WEB_APP_URL, {
+                method: "POST",
+                mode: "no-cors",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload)
+            })
+            .then(() => {
+                setTimeout(() => { fetchAllData(); }, 800);
+            })
+            .catch(err => {
+                alert("Communication execution dropped during post event: " + err.toString());
+                toggleLoader(false);
+            });
+        }
+
+        function formatCurrency(val) {
+            const parsed = parseFloat(val);
+            if (isNaN(parsed)) return "$0.00";
+            return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(parsed);
+        }
+
+        function toggleLoader(show) {
+            const target = document.getElementById("globalLoader");
+            if(show) target.classList.remove("hidden tracking-wide");
+            else target.classList.add("hidden");
+        }
+    </script>
+</body>
+</html>
