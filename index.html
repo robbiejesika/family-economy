@@ -348,10 +348,13 @@
             return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(parsed);
         }
 
-        function toggleLoader(show) {
+       function toggleLoader(show) {
             const target = document.getElementById("globalLoader");
-            if(show) target.classList.remove("hidden tracking-wide");
-            else target.classList.add("hidden");
+            if (show) {
+                target.classList.remove("hidden");
+            } else {
+                target.classList.add("hidden");
+            }
         }
     </script>
 </body>
